@@ -4,9 +4,9 @@ from supabase import create_client, Client
 
 app = Flask(__name__)
 
-SUPABASE_URL = "https://your-supabase-url.supabase.co"
-SUPABASE_KEY = "your-supabase-api-key"
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+VITE_ANON_KEY = os.getenv('VITE_ANON_KEY')
+supabase: Client = create_client(SUPABASE_URL, VITE_ANON_KEY)
 
 @app.route('/')
 def home():
