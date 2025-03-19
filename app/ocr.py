@@ -6,13 +6,14 @@ from absl import logging
 import io
 import constants
 load_dotenv()
-LLMA_API_KEY = os.getenv('LLMA_API_KEY')
+GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 
 class ModelManager:
     def __init__(self, model="llama-3.3-70b-versatile"):
         self.model = model
-        self.client = Groq(api_key=LLMA_API_KEY)
+        self.client = Groq(api_key=GROQ_API_KEY)
         self.reader = easyocr.Reader(['en']) 
+        self.text = ""
 
     def inference_on_image(self, file, detail: int=0):
         if type(file) == bytes:
@@ -22,15 +23,14 @@ class ModelManager:
             image_data: str = self.reader.readtext(file, detail = detail)
         
         if type(image_data) == list:
-            return " ".join(image_data)
+            self.text = " ".join(image_data)
         else:
             logging.error(f"Failed to decode image with error: {image_data}")
-            return ""
 
-    def inference_on_transcript(self, type: str, transcript: str):
+    def inference_on_transcript(self, type: str):
         match type:
             case 'ASSESSMENT':
-                instruction: str = "Based on this transcript of an assessment schedule, create the assessment entries as a json. Only answer with the JSON. Transcript: " + transcript + ".\n"
+                instruction: str = "Based on this transcript of an assessment schedule, create the assessment entries as a json. Only answer with the JSON. Transcript: " + self.text + ".\n"
                 system_prompt_intro: str = """
                         You are a helpful assistant. Provide a response given the example answer format below.
 
@@ -53,11 +53,10 @@ class ModelManager:
         temperature=1,
         max_completion_tokens=1024,
         top_p=1,
-        stream=True,
         stop=None,
         )
-        for chunk in completion:
-            print(chunk.choices[0].delta.content or "", end="")
+        message = completion.choices[0].message["content"]
+        return message
 
         
 
