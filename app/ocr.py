@@ -55,7 +55,7 @@ class Model:
         top_p=1,
         stop=None,
         )
-        message = completion.choices[0].message["content"]
+        message = completion.choices[0].message.content
         return message
 
         
