@@ -1,12 +1,8 @@
 from flask import Flask, request, jsonify
 import os
-from supabase import create_client, Client
+
 
 app = Flask(__name__)
-
-SUPABASE_URL = os.getenv('SUPABASE_URL')
-VITE_ANON_KEY = os.getenv('VITE_ANON_KEY')
-supabase: Client = create_client(SUPABASE_URL, VITE_ANON_KEY)
 
 @app.route('/')
 def home():
@@ -30,17 +26,4 @@ def upload_image():
     file.save(save_path)
     return jsonify({'message': 'Image uploaded successfully', 'filename': file.filename})
 
-# API to create a class entry in Supabase
-@app.route('/create-assessment', methods=['POST'])
-def create_assessment():
-    data = request.get_json()
-    class_name = data.get('class_name')
-    if not class_name:
-        return jsonify({'error': 'class_name is required'}), 400
-
-    response = supabase.table('class').insert({'class_name': class_name}).execute()
-    if response.status_code != 201:
-        return jsonify({'error': 'Failed to insert into Supabase', 'details': response.data}), 500
-
-    return jsonify({'message': 'Class created successfully', 'data': response.data}), 201
 
