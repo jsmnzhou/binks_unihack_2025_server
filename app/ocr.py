@@ -8,7 +8,7 @@ import constants
 load_dotenv()
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 
-class ModelManager:
+class Model:
     def __init__(self, model="llama-3.3-70b-versatile"):
         self.model = model
         self.client = Groq(api_key=GROQ_API_KEY)
