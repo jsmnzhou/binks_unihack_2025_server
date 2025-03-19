@@ -17,7 +17,7 @@ def upload_image():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
     
-    image_data = modelManager.inference_on_image(file)
+    image_data = modelManager.inference_on_image(file.read())
     logging.info(f"got image data: {image_data}")
     model_response = modelManager.inference_on_transcript(image_data)
 

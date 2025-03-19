@@ -2,42 +2,53 @@ import easyocr
 import os
 from dotenv import load_dotenv
 from groq import Groq
+from absl import logging
 import io
-from PIL import Image
+import constants
 load_dotenv()
 LLMA_API_KEY = os.getenv('LLMA_API_KEY')
 
 class ModelManager:
     def __init__(self, model="llama-3.3-70b-versatile"):
         self.model = model
-        self.client = Groq()
+        self.client = Groq(api_key=LLMA_API_KEY)
         self.reader = easyocr.Reader(['en']) 
 
     def inference_on_image(self, file, detail: int=0):
-        image_bytes = io.BytesIO(file.read)
-        image_data: str = self.reader.readtext(image_bytes, detail = detail)
-        return image_data
+        if type(file) == bytes:
+            image_bytes = io.BytesIO(file)
+            image_data: str = self.reader.readtext(image_bytes, detail = detail)
+        elif type(file) == str:
+            image_data: str = self.reader.readtext(file, detail = detail)
+        
+        if type(image_data) == list:
+            return " ".join(image_data)
+        else:
+            logging.error(f"Failed to decode image with error: {image_data}")
+            return ""
 
     def inference_on_transcript(self, type: str, transcript: str):
         match type:
             case 'ASSESSMENT':
-                system_prompt_intro: str = ""
-                instruction: str = "Based on this transcript of an assessment schedule, create the assessment entries as a json" + transcript
+                instruction: str = "Based on this transcript of an assessment schedule, create the assessment entries as a json. Only answer with the JSON. Transcript: " + transcript + ".\n"
+                system_prompt_intro: str = """
+                        You are a helpful assistant. Provide a response given the example answer format below.
+
+                        Prompt: 
+                        I have a datatable of the form:
+                        """ + constants.ASSESSMENTS_TABLE + ".\n"
+
+                system_prompt: str = system_prompt_intro + " " + instruction + " Example input: " + constants.ASSESSMENTS_TEXT + " Example answer: " + str(constants.ASSESSMENTS_JSON)
             case _:
-                return None
+                system_prompt: str = ""
             
-        
         completion = self.client.chat.completions.create(
         model=self.model,
         messages=[
                 {
                     "role": "system",
-                    "content": system_prompt_intro,
-                },
-                {
-                    "role": "user",
-                    "content": instruction,
-                },
+                    "content": system_prompt,
+                }
             ],
         temperature=1,
         max_completion_tokens=1024,
