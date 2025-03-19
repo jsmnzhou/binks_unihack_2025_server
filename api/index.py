@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
-import os
-
+from app.ocr import ModelManager
+from absl import logging
 
 app = Flask(__name__)
 
@@ -8,11 +8,7 @@ app = Flask(__name__)
 def home():
     return 'Hello, World!'
 
-@app.route('/about')
-def about():
-    return 'About'
-
-# Get the image file
+# Get the image file for assessments 
 @app.route('/upload-assessments-image', methods=['POST'])
 def upload_image():
     if 'file' not in request.files:
@@ -21,9 +17,12 @@ def upload_image():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
     
-    save_path = os.path.join('uploads', file.filename)
-    os.makedirs('uploads', exist_ok=True)
-    file.save(save_path)
+    image_data = modelManager.inference_on_image(file)
+    logging.info(f"got image data: {image_data}")
+    model_response = modelManager.inference_on_transcript(image_data)
+
     return jsonify({'message': 'Image uploaded successfully', 'filename': file.filename})
 
-
+if __name__ == '__main__':
+    modelManager = ModelManager()
+    app.run(debug=True)
